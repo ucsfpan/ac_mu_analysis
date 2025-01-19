@@ -1,7 +1,7 @@
 # From Fastq to BAM (ready for mutation calling and other downstream steps)
 
 #Key variables(need to update for each patient)
-REFERENCE_GENOME="genome.fa"  # Genome Reference (hg19)
+REFERENCE_GENOME="genome.fa"  # Genome Reference (hg38)
 SAMP_base=" "                 # prefix of sample(either normal or tumor)
 raw_FASTQ_dir=" "             # Directory of raw Fastq files
 trimmed_FASTQ_dir=" "         # Directory of Fastq files with adaptor trimmed
@@ -40,9 +40,9 @@ gatk CollectInsertSizeMetrics -I ${SAMP_base}_dedup.bam -O ${SAMP_base}_insert_s
 
 # f) Run BQSR
 gatk BaseRecalibrator -I ${SAMP_base}_dedup.bam -R ${REFERENCE_GENOME} \
-    --known-sites ${SNP_dir}/hapmap_3.3.hg19.sites.vcf \
-    --known-sites ${SNP_dir}/1000G_phase1.indels.hg19.sites.vcf \
-    --known-sites ${SNP_dir}/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf \
+    --known-sites ${SNP_dir}/hapmap_3.3.hg38.vcf.gz \
+    --known-sites ${SNP_dir}/1000G_phase1.snps.high_confidence.hg38.vcf.gz \
+    --known-sites ${SNP_dir}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
     -O ${SAMP_base}_BSQR.table
 
 gatk ApplyBQSR -R ${REFERENCE_GENOME} -I ${SAMP_base}_dedup.bam \
@@ -50,14 +50,14 @@ gatk ApplyBQSR -R ${REFERENCE_GENOME} -I ${SAMP_base}_dedup.bam \
 
 # g) Left alignment at indel site (GATK 3.6)
 java -jar GenomeAnalysisTK.jar -T RealignerTargetCreator -R ${REFERENCE_GENOME} \
-    -known ${SNP_dir}/1000G_phase1.indels.hg19.sites.vcf \
-    -known ${SNP_dir}/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf \
+    -known ${SNP_dir}/1000G_phase1.snps.high_confidence.hg38.vcf.gz \
+    -known ${SNP_dir}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
     -I ${SAMP_base}_dedup_BSQR.bam -o ${SAMP_base}_realignertargetcreator.intervals
 
 java -Xmx30G -Djava.io.tmpdir=${TMP_dir} -jar GenomeAnalysisTK.jar -T IndelRealigner -R ${REFERENCE_GENOME} \
     -targetIntervals ${SAMP_base}_realignertargetcreator.intervals \
-    -known ${SNP_dir}/1000G_phase1.indels.hg19.sites.vcf \
-    -known ${SNP_dir}/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf \
+    -known ${SNP_dir}/1000G_phase1.snps.high_confidence.hg38.vcf.gz \
+    -known ${SNP_dir}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
     -I ${SAMP_base}_dedup_BSQR.bam -o ${SAMP_base}_preprocessed.bam
 # The final BAM file is ${SAMP_base}_preprocessed.bam
 
